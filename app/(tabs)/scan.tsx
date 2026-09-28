@@ -5,11 +5,12 @@ import { StyleSheet, Text, View } from 'react-native';
 import AppButton from '@/components/AppButton';
 import { COLORS } from '@/constants/colors';
 
-import { STUDENT_ID } from '@/constants/student';
-import { registerAttendance } from '@/lib/database';
+import { useAuth } from '@/lib/auth';
+import { registerAttendance } from '@/lib/attendance';
 
 
 export default function ScanScreen() {
+  const { user } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [lastData, setLastData] = useState<string | null>(null);
@@ -41,9 +42,18 @@ export default function ScanScreen() {
   const handleBarcodeScanned = ({ data }: { data: string }) => {
   setScanned(true);
   setLastData(data);
-  registerAttendance(data, STUDENT_ID).then((result) => {
+  if (!user?.id) {
+    setMessage('Sign in before recording attendance.');
+    setSuccess(false);
+    return;
+  }
+
+  registerAttendance(data, user.id).then((result) => {
     setMessage(result.message);
     setSuccess(result.success);
+  }).catch(() => {
+    setMessage('Could not record attendance. Please try again.');
+    setSuccess(false);
   });
 };
 
@@ -101,7 +111,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   camera: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   title: {
     fontSize: 20,
