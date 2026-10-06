@@ -22,7 +22,15 @@ export async function createEvent(
 ): Promise<{ error: string | null }> {
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
+
+  if (userError) {
+    return { error: userError.message };
+  }
+  if (!user) {
+    return { error: 'You must be signed in to create an event.' };
+  }
 
   const { error } = await supabase.from('events').upsert(
     {
@@ -30,7 +38,7 @@ export async function createEvent(
       title: event.title,
       start_time: event.start || null,
       end_time: event.end || null,
-      created_by: user?.id ?? null,
+      created_by: user.id,
     },
     { onConflict: 'event_code' }
   );
@@ -47,23 +55,25 @@ export async function getEventsByTeacher(
     .eq('created_by', teacherId)
     .order('created_at', { ascending: false });
 
-  if (error || !data) {
-    return [];
+  if (error) {
+    throw new Error(`Could not load teacher events: ${error.message}`);
   }
 
-  return data as CloudEvent[];
+  return (data ?? []) as CloudEvent[];
 }
 
-export async function getEventByCode(code: string): Promise<CloudEvent | null> {
+export async function getEventByCode(
+  code: string
+): Promise<CloudEvent | null> {
   const { data, error } = await supabase
     .from('events')
     .select('*')
     .eq('event_code', code)
     .maybeSingle();
 
-  if (error || !data) {
-    return null;
+  if (error) {
+    throw new Error(`Could not load event: ${error.message}`);
   }
 
-  return data as CloudEvent;
+  return data as CloudEvent | null;
 }

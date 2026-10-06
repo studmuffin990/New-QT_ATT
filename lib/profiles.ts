@@ -16,7 +16,10 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .eq('id', userId)
     .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    throw error;
+  }
+  if (!data) {
     return null;
   }
 
@@ -32,5 +35,20 @@ export async function updateProfile(
     .update(updates)
     .eq('id', userId);
 
-  return { error: error?.message ?? null };
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (updates.full_name !== undefined) {
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { full_name: updates.full_name },
+    });
+    if (authError) {
+      return {
+        error: `Your profile name was saved, but account metadata could not be updated: ${authError.message}`,
+      };
+    }
+  }
+
+  return { error: null };
 }

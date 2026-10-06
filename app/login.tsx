@@ -66,7 +66,7 @@ export default function LoginScreen() {
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to record your attendance</Text>
 
-            <View style={styles.form}>
+            <View style={styles.formCard}>
               <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
@@ -105,7 +105,7 @@ export default function LoginScreen() {
             </View>
 
             <Link href="/register" style={styles.link}>
-              Don't have an account? Sign Up
+              New here? <Text style={styles.linkStrong}>Create an account</Text>
             </Link>
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -124,44 +124,56 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 22,
+    paddingBottom: 48,
+    justifyContent: 'center',
   },
   headerContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
     color: COLORS.textSecondary,
-    lineHeight: 21,
-    marginBottom: 32,
+    lineHeight: 22,
+    marginBottom: 22,
   },
-  form: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  input: {
+  formCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 10,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    padding: 18,
+    marginBottom: 20,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: COLORS.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 15,
+    minHeight: 52,
+    fontSize: 15,
     color: COLORS.textPrimary,
   },
   error: {
@@ -175,8 +187,13 @@ const styles = StyleSheet.create({
   },
   link: {
     fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontWeight: '500',
+    paddingVertical: 12,
+  },
+  linkStrong: {
     color: COLORS.primary,
-    textAlign: 'left',
-    fontWeight: '600',
+    fontWeight: '800',
   },
 });

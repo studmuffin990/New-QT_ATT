@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 import type { Role } from './profiles';
 import type { Session, User } from '@supabase/supabase-js';
@@ -9,12 +9,13 @@ type AuthState = {
   loading: boolean;
 };
 
-let globalSession: Session | null = null;
-let globalUser: User | null = null;
-let globalLoading = true;
-let listeners: Set<() => void> = new Set();
+let globalAuthState: AuthState = {
+  session: null,
+  user: null,
+  loading: true,
+};
+const listeners = new Set<() => void>();
 let initialized = false;
-let authSubscription: { unsubscribe: () => void } | null = null;
 const AUTH_INIT_TIMEOUT_MS = 3000;
 
 async function initializeAuth() {
@@ -39,45 +40,40 @@ async function initializeAuth() {
 }
 
 function notify() {
-  listeners.forEach((l) => l());
+  listeners.forEach((listener) => listener());
 }
 
 export function setAuth(session: Session | null) {
-  globalSession = session;
-  globalUser = session?.user ?? null;
-  globalLoading = false;
+  globalAuthState = {
+    session,
+    user: session?.user ?? null,
+    loading: false,
+  };
   notify();
 }
 
-export function useAuth(): AuthState {
-  const [, forceRender] = useState(0);
+function subscribe(listener: () => void) {
+  listeners.add(listener);
 
-  useEffect(() => {
-    const listener = () => forceRender((n) => n + 1);
-    listeners.add(listener);
+  if (!initialized) {
+    initialized = true;
+    void initializeAuth();
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setAuth(session);
+    });
+  }
 
-    if (!initialized) {
-      initialized = true;
-      void initializeAuth();
-    }
-
-    if (!authSubscription) {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        setAuth(session);
-      });
-      authSubscription = data.subscription;
-    }
-
-    return () => {
-      listeners.delete(listener);
-    };
-  }, []);
-
-  return {
-    session: globalSession,
-    user: globalUser,
-    loading: globalLoading,
+  return () => {
+    listeners.delete(listener);
   };
+}
+
+function getAuthState() {
+  return globalAuthState;
+}
+
+export function useAuth(): AuthState {
+  return useSyncExternalStore(subscribe, getAuthState, getAuthState);
 }
 
 export type SignUpProfile = {
@@ -142,7 +138,9 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
-  setAuth(null);
-  supabase.auth.signOut().catch(() => {});
-  return { error: null };
+  const { error } = await supabase.auth.signOut();
+  if (!error) {
+    setAuth(null);
+  }
+  return { error: error?.message ?? null };
 }

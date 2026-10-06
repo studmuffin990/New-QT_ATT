@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   StyleSheet,
   Text,
@@ -89,8 +90,10 @@ export default function RegisterScreen() {
               <Header title="QR Attendance" />
             </View>
 
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Register to start recording attendance</Text>
+            <Text style={styles.title}>Join QR-ATT</Text>
+            <Text style={styles.subtitle}>
+              Create your account to check in and keep track of school events.
+            </Text>
 
             {success ? (
               <View style={styles.successContainer}>
@@ -104,7 +107,7 @@ export default function RegisterScreen() {
                 </Link>
               </View>
             ) : (
-              <View style={styles.form}>
+              <View style={styles.formCard}>
                 <Text style={styles.label}>Full Name</Text>
                 <TextInput
                   style={styles.input}
@@ -121,9 +124,27 @@ export default function RegisterScreen() {
                   {(['student', 'teacher'] as const).map((option) => (
                     <Pressable
                       key={option}
-                      style={[styles.roleChip, role === option && styles.roleChipActive]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: role === option }}
+                      style={[
+                        styles.roleChip,
+                        role === option && styles.roleChipActive,
+                      ]}
                       onPress={() => setRole(option)}
                     >
+                      <Ionicons
+                        name={
+                          option === 'student'
+                            ? 'school-outline'
+                            : 'book-outline'
+                        }
+                        size={21}
+                        color={
+                          role === option
+                            ? COLORS.primary
+                            : COLORS.textSecondary
+                        }
+                      />
                       <Text
                         style={[
                           styles.roleChipText,
@@ -204,21 +225,22 @@ const styles = StyleSheet.create({
   },
   roleRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginBottom: 8,
   },
   roleChip: {
     flex: 1,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 13,
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.background,
+    gap: 7,
   },
   roleChipActive: {
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + '14',
+    backgroundColor: COLORS.surface,
   },
   roleChipText: {
     color: COLORS.textPrimary,
@@ -233,44 +255,55 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 22,
+    paddingBottom: 48,
   },
   headerContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 15,
     color: COLORS.textSecondary,
     lineHeight: 21,
-    marginBottom: 32,
+    marginBottom: 20,
   },
-  form: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-    marginBottom: 6,
-    marginTop: 10,
-  },
-  input: {
+  formCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 10,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
+    padding: 18,
+    marginBottom: 24,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  input: {
+    backgroundColor: COLORS.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 15,
+    minHeight: 52,
+    fontSize: 15,
     color: COLORS.textPrimary,
   },
   error: {
@@ -285,15 +318,16 @@ const styles = StyleSheet.create({
   link: {
     fontSize: 14,
     color: COLORS.primary,
-    textAlign: 'left',
-    fontWeight: '600',
+    textAlign: 'center',
+    fontWeight: '700',
+    paddingVertical: 12,
   },
   successContainer: {
     alignItems: 'center',
     marginBottom: 24,
     padding: 20,
     backgroundColor: COLORS.card,
-    borderRadius: 10,
+    borderRadius: 18,
   },
   successTitle: {
     fontSize: 18,

@@ -43,6 +43,13 @@ export type TeacherEventAttendance = {
   }[];
 };
 
+export type TeacherEventSummary = {
+  eventId: string;
+  eventCode: string;
+  title: string;
+  attendeeCount: number;
+};
+
 type EventRow = {
   id: string;
   event_code: string;
@@ -55,6 +62,16 @@ type AttendanceRow = {
   event_id: string;
   student_id: string;
   scanned_at: string;
+};
+
+type AttendanceEventIdRow = {
+  event_id: string;
+};
+
+type SummaryEventRow = {
+  id: string;
+  event_code: string;
+  title: string;
 };
 
 export async function getTeacherEventAttendance(
@@ -107,10 +124,54 @@ export async function getTeacherEventAttendance(
   });
 }
 
+export async function getTeacherEventSummary(
+  teacherId: string
+): Promise<TeacherEventSummary[]> {
+  const { data: events, error: eventError } = await supabase
+    .from('events')
+    .select('id, event_code, title')
+    .eq('created_by', teacherId)
+    .order('created_at', { ascending: false })
+    .returns<SummaryEventRow[]>();
+
+  if (eventError) {
+    throw new Error(`Could not load teacher event summary: ${eventError.message}`);
+  }
+
+  if (!events || events.length === 0) {
+    return [];
+  }
+
+  const eventIds = events.map((event) => event.id);
+  const { data: attendance, error: attendanceError } = await supabase
+    .from('attendance')
+    .select('event_id')
+    .in('event_id', eventIds)
+    .returns<AttendanceEventIdRow[]>();
+
+  if (attendanceError) {
+    throw new Error(
+      `Could not load attendance summary: ${attendanceError.message}`
+    );
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of attendance ?? []) {
+    counts[row.event_id] = (counts[row.event_id] ?? 0) + 1;
+  }
+
+  return events.map((event) => ({
+    eventId: event.id,
+    eventCode: event.event_code,
+    title: event.title,
+    attendeeCount: counts[event.id] ?? 0,
+  }));
+}
+
 function validateEventWindow(payload: QRPayload): RegisterResult | null {
   const now = Date.now();
-  const start = payload.start ? new Date(payload.start).getTime() : null;
-  const end = payload.end ? new Date(payload.end).getTime() : null;
+  const start = payload.start ? parseEventTimestamp(payload.start) : null;
+  const end = payload.end ? parseEventTimestamp(payload.end) : null;
 
   if (start !== null && Number.isNaN(start)) {
     return { success: false, message: 'Attendance QR code has an invalid start time.' };
@@ -125,6 +186,53 @@ function validateEventWindow(payload: QRPayload): RegisterResult | null {
     return { success: false, message: 'Event has already ended.' };
   }
   return null;
+}
+
+function parseEventTimestamp(value: string): number {
+  if (/(?:z|[+-]\d{2}:\d{2})$/i.test(value)) {
+    return new Date(value).getTime();
+  }
+
+  const localDateTime =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(
+      value
+    );
+  if (!localDateTime) {
+    return new Date(value).getTime();
+  }
+
+  const [, year, month, day, hour, minute, second = '0', fraction = '0'] =
+    localDateTime;
+  const parts = [
+    Number(year),
+    Number(month),
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second),
+  ];
+  const date = new Date(
+    parts[0],
+    parts[1] - 1,
+    parts[2],
+    parts[3],
+    parts[4],
+    parts[5],
+    Number(fraction.padEnd(3, '0'))
+  );
+
+  if (
+    date.getFullYear() !== parts[0] ||
+    date.getMonth() !== parts[1] - 1 ||
+    date.getDate() !== parts[2] ||
+    date.getHours() !== parts[3] ||
+    date.getMinutes() !== parts[4] ||
+    date.getSeconds() !== parts[5]
+  ) {
+    return Number.NaN;
+  }
+
+  return date.getTime();
 }
 
 export async function registerAttendance(
@@ -142,37 +250,25 @@ export async function registerAttendance(
     return windowError;
   }
 
-  const title = payload.title ?? payload.event;
-  const foundEvent = await getEventByCode(payload.event);
-
-  let event: EventLite | null = foundEvent;
-  if (!event) {
-    const { data: createdEvent, error: createError } = await supabase
-      .from('events')
-      .insert({
-        event_code: payload.event,
-        title,
-        start_time: payload.start ?? null,
-        end_time: payload.end ?? null,
-        created_by: null,
-      })
-      .select('id, event_code, title')
-      .single<EventLite>();
-
-    if (createError) {
-      if (createError.code === '23505') {
-        const existingEvent = await getEventByCode(payload.event);
-        if (!existingEvent) {
-          return { success: false, message: 'Could not load the event.' };
-        }
-        event = existingEvent;
-      } else {
-        return { success: false, message: 'Could not create the event.' };
-      }
-    } else {
-      event = createdEvent;
-    }
+  let foundEvent;
+  try {
+    foundEvent = await getEventByCode(payload.event);
+  } catch (error) {
+    return {
+      success: false,
+      message: `Could not check the event: ${
+        error instanceof Error ? error.message : 'Unexpected error.'
+      }`,
+    };
   }
+
+  if (!foundEvent) {
+    return {
+      success: false,
+      message: `Event "${payload.event}" was not found. Ask the teacher to save it, and make sure both apps use the same Supabase project.`,
+    };
+  }
+  const event: Pick<EventLite, 'id' | 'title'> = foundEvent;
 
   const { error: attendanceError } = await supabase.from('attendance').insert({
     student_id: studentId,
@@ -187,7 +283,10 @@ export async function registerAttendance(
         eventTitle: event.title,
       };
     }
-    return { success: false, message: 'Could not record attendance.' };
+    return {
+      success: false,
+      message: `Could not record attendance: ${attendanceError.message}`,
+    };
   }
 
   return {

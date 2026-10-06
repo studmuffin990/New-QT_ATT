@@ -8,19 +8,27 @@ type Props = {
   icon: keyof typeof Ionicons.glyphMap;
   theme?: 'primary';
   onPress: () => void;
+  disabled?: boolean;
 };
 
-export default function AppButton({ title, icon, theme, onPress }: Props) {
+export default function AppButton({
+  title,
+  icon,
+  theme,
+  onPress,
+  disabled = false,
+}: Props) {
   if (theme === 'primary') {
     return (
-      <View
-        style={[
-          styles.buttonOuter,
-          { borderWidth: 1, borderColor: COLORS.primary, borderRadius: 10 },
-        ]}
-      >
+      <View style={styles.buttonOuter}>
         <Pressable
-          style={[styles.buttonInner, { backgroundColor: COLORS.primary }]}
+          accessibilityRole="button"
+          disabled={disabled}
+          style={({ pressed }) => [
+            styles.buttonInner,
+            styles.primaryFill,
+            (disabled || pressed) && styles.dimmed,
+          ]}
           onPress={onPress}
         >
           <Ionicons
@@ -39,7 +47,16 @@ export default function AppButton({ title, icon, theme, onPress }: Props) {
 
   return (
     <View style={styles.buttonOuter}>
-      <Pressable style={[styles.buttonInner, styles.secondaryFill]} onPress={onPress}>
+      <Pressable
+        accessibilityRole="button"
+        disabled={disabled}
+        style={({ pressed }) => [
+          styles.buttonInner,
+          styles.secondaryFill,
+          (disabled || pressed) && styles.dimmed,
+        ]}
+        onPress={onPress}
+      >
         <Ionicons
           name={icon}
           size={22}
@@ -58,8 +75,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   buttonInner: {
-    borderRadius: 10,
-    paddingVertical: 16,
+    minHeight: 54,
+    borderRadius: 16,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -68,9 +85,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  primaryFill: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.18,
+    shadowRadius: 9,
+    elevation: 3,
+  },
   icon: { paddingRight: 10 },
-  label: { fontSize: 17, fontWeight: '600', color: COLORS.textPrimary },
+  label: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
   secondaryFill: {
     backgroundColor: COLORS.card,
+  },
+  dimmed: {
+    opacity: 0.6,
   },
 });

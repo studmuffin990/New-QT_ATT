@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { StyleSheet } from 'react-native';
 import { COLORS } from '@/constants/colors';
 
 export default function TabLayout() {
@@ -7,13 +8,35 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
+          marginTop: 3,
+        },
+        tabBarItemStyle: {
+          paddingTop: 7,
+          paddingBottom: 5,
+        },
         headerStyle: { backgroundColor: COLORS.background },
+        headerTitleStyle: {
+          color: COLORS.textPrimary,
+          fontSize: 17,
+          fontWeight: '700',
+        },
         headerShadowVisible: false,
         headerTintColor: COLORS.textPrimary,
         tabBarStyle: {
           backgroundColor: COLORS.card,
           borderTopColor: COLORS.border,
-          borderTopWidth: 1,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          height: 64,
+          paddingTop: 4,
+          elevation: 8,
+          shadowColor: COLORS.shadow,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
         },
       }}
     >
@@ -70,19 +93,19 @@ export default function TabLayout() {
         }}
       />
 
-    <Tabs.Screen
-  name="teacher"
-  options={{
-    title: 'Teacher',
-    tabBarIcon: ({ color, focused }) => (
-      <Ionicons
-        name={focused ? 'clipboard' : 'clipboard-outline'}
-        color={color}
-        size={24}
+      <Tabs.Screen
+        name="teacher"
+        options={{
+          title: 'Create',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'add-circle' : 'add-circle-outline'}
+              color={color}
+              size={24}
+            />
+          ),
+        }}
       />
-    ),
-  }}
-/>
     </Tabs>
   );
 }
